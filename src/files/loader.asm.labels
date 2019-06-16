@@ -1,0 +1,9 @@
+./src/files/loader.asm.labels LABEL TABLE FILE
+----------------------------------------------
+LABEL           VALUE
+INIT             0000
+IADDR            001E
+SIZE             0020
+LOOP             0009
+ONE              0021
+END              001D

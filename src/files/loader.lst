@@ -1,0 +1,27 @@
+./src/files/loader.lst LIST FILE
+---------------------------------
+ADDRESS   OBJECT    LINE   SOURCE
+                       1   @ /0000 
+   0000       C1       2   INIT IO /1 ; Get Data from device
+   0001     901E       3   MM IADDR ; Save first byte of initial address
+   0003       C1       4   IO /1 
+   0004     901F       5   MM IADDR+1 ; Save second byte of initial address
+   0006       C1       6   IO /1 
+   0007     9020       7   MM SIZE ; Save size
+   0009       C1       9   LOOP IO /1 ; Read byte from file
+   000A       32      10   CN /2 ; Activate Indirect Mode
+   000B     901E      11   MM IADDR ; Indirect move to current address
+   000D     801F      13   LD IADDR+1 ; Get current address
+   000F     4021      14   + ONE ; Sum 1
+   0011     901F      15   MM IADDR+1 ; Put it back
+   0013     8020      17   LD SIZE ; Get size
+   0015     5021      18   - ONE ; Subtract 1
+   0017     9020      19   MM SIZE ; Put it back
+   0019     101D      21   JZ END ; Finish if size = 0
+   001B        9      22   JP LOOP 
+   001D       BF      24   END OS /F ; End Program
+   001E        0      26   IADDR K 0 
+   001F        0      27   K 0 
+   0020        0      28   SIZE K 0 
+   0021        1      29   ONE K 1 
+                      30   # INIT 

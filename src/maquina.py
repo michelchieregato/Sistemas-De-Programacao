@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 
+
 class Maquina(object):
     def __init__(self):
         self.memoria = np.zeros(10000, dtype=np.int8)
@@ -82,5 +83,3 @@ class Maquina(object):
             print(self._acumulador)
         else:
             sys.exit()
-
-    
