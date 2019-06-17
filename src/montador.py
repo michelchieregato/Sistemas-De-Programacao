@@ -29,6 +29,13 @@ def try_to_make_int(op):
         return op
 
 
+def prettier_hexa(hexa_string):
+    try:
+        return hexa_string[:2] + hexa_string[2:].zfill(4).upper()
+    except:
+        return hexa_string
+
+
 class Montador(object):
     def __init__(self, file):
 
@@ -56,7 +63,8 @@ class Montador(object):
         self.dicionario_de_labels = dict(zip(self.tabela_labels.Label, self.tabela_labels.Valor))
         self.contador_de_instrucoes = 0
         self.segundo_passo()
-        self.tabela_final.sort_values('Linha')
+        self.tabela_final['Obj'] = self.tabela_final['Obj'].apply(prettier_hexa)
+        self.tabela_final = self.tabela_final.sort_values('Linha')
 
     def primeiro_passo(self):
         for index, linha_de_codigo in self.codigo_tabelado.iterrows():
@@ -115,11 +123,7 @@ class Montador(object):
                 continue
 
             op = OPERACOES[linha_de_codigo['Operacao']]
-            if TAMANHO_DAS_OPERACOES[linha_de_codigo['Operacao']] == 1:
-                value = hex(op << 4 | int(linha_de_codigo['Operador Recalculado'], 16))
-            else:
-                value = op << 12 | int(linha_de_codigo['Operador Recalculado'], 16)
-                value = hex(value >> 8) + hex(value & 0xFF)[2:]
+            value = hex(op) + linha_de_codigo['Operador Recalculado'][2:]
 
             self.tabela_final.loc[index] = [
                 hex(self.contador_de_instrucoes),
