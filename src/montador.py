@@ -49,36 +49,41 @@ class Montador(object):
         self.tabela_labels = pd.DataFrame(columns=['Label', 'Valor'])
 
         self.inicio_do_programa = 0
+        self.dicionario_de_labels = dict()
 
     def montar(self):
         self.primeiro_passo()
+        self.dicionario_de_labels = dict(zip(self.tabela_labels.Label, self.tabela_labels.Valor))
+        self.contador_de_instrucoes = 0
+        self.segundo_passo()
+        self.tabela_final.sort_values('Linha')
 
     def primeiro_passo(self):
         for index, linha_de_codigo in self.codigo_tabelado.iterrows():
-            if linha_de_codigo['Operacao']:
-                self.tabela_labels = [linha_de_codigo['Label'], hex(self.contador_de_instrucoes)]
+            if linha_de_codigo['Label']:
+                self.tabela_labels.loc[index] = [linha_de_codigo['Label'], hex(self.contador_de_instrucoes)]
 
             if linha_de_codigo['Operacao'] == '@':
                 self.inicio_do_programa = self.contador_de_instrucoes = linha_de_codigo['Operador']
-                self.tabela_final.loc[index] =[
+                self.tabela_final.loc[index] = [
                     '',
                     '',
-                    index+1,
+                    index + 1,
                     ' '.join(linha_de_codigo.apply(str).values).strip()
                 ]
             elif linha_de_codigo['Operacao'] == '$':
-                self.tabela_final.loc[index] =[
+                self.tabela_final.loc[index] = [
                     hex(self.contador_de_instrucoes),
                     hex(linha_de_codigo['Operador']),
-                    index+1,
+                    index + 1,
                     ' '.join(linha_de_codigo.apply(str).values).strip()
                 ]
                 self.contador_de_instrucoes += linha_de_codigo['Operador']
             elif linha_de_codigo['Operacao'] == 'K':
-                self.tabela_final.loc[index] =[
+                self.tabela_final.loc[index] = [
                     hex(self.contador_de_instrucoes),
                     hex(linha_de_codigo['Operador']),
-                    index+1,
+                    index + 1,
                     ' '.join(linha_de_codigo.apply(str).values).strip()
                 ]
                 self.contador_de_instrucoes += 1
@@ -88,4 +93,51 @@ class Montador(object):
                 self.contador_de_instrucoes += TAMANHO_DAS_OPERACOES[linha_de_codigo['Operacao']]
 
     def segundo_passo(self):
-        pass
+        self.codigo_tabelado['Operador Recalculado'] = self.codigo_tabelado['Operador'].apply(
+            lambda op: self.__update_table(op))
+        for index, linha_de_codigo in self.codigo_tabelado.iterrows():
+            if linha_de_codigo['Operacao'] == '@':
+                self.inicio_do_programa = self.contador_de_instrucoes = int(linha_de_codigo['Operador Recalculado'], 0)
+                continue
+            elif linha_de_codigo['Operacao'] == '$':
+                self.contador_de_instrucoes += int(linha_de_codigo['Operador Recalculado'], 0)
+                continue
+            elif linha_de_codigo['Operacao'] == 'K':
+                self.contador_de_instrucoes += 1
+                continue
+            elif linha_de_codigo['Operacao'] == '#':
+                self.tabela_final.loc[index] = [
+                    hex(self.contador_de_instrucoes),
+                    linha_de_codigo['Operador'],
+                    index + 1,
+                    ' '.join(linha_de_codigo.apply(str).values).strip()
+                ]
+                continue
+
+            op = OPERACOES[linha_de_codigo['Operacao']]
+            if TAMANHO_DAS_OPERACOES[linha_de_codigo['Operacao']] == 1:
+                value = hex(op << 4 | int(linha_de_codigo['Operador Recalculado'], 16))
+            else:
+                value = op << 12 | int(linha_de_codigo['Operador Recalculado'], 16)
+                value = hex(value >> 8) + hex(value & 0xFF)[2:]
+
+            self.tabela_final.loc[index] = [
+                hex(self.contador_de_instrucoes),
+                value,
+                index + 1,
+                ' '.join(linha_de_codigo.drop(['Operador Recalculado']).apply(str).values).strip()
+            ]
+            self.contador_de_instrucoes += TAMANHO_DAS_OPERACOES[linha_de_codigo['Operacao']]
+
+    def __update_table(self, operador):
+        operador = str(operador)
+        if '+' in operador:
+            aux = operador.split('+')
+            return hex(int(self.dicionario_de_labels[aux[0]], 0) + int(aux[1]))
+        elif '-' in operador:
+            aux = operador.split('+')
+            return hex(int(self.dicionario_de_labels[aux[0]], 0) - int(aux[1]))
+        elif operador in self.dicionario_de_labels.keys():
+            return self.dicionario_de_labels[str(operador)]
+
+        return hex(int(operador.replace('/', '0x'), 0))
